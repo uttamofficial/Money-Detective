@@ -1,7 +1,15 @@
 import { NextResponse } from "next/server";
 
+function backendBase(): string | null {
+  // External Render backend wins when set; otherwise fall back to the
+  // Vercel service binding (local `vercel dev` / Vercel deployment).
+  // Neither variable is ever exposed to the browser — the browser only
+  // calls these proxy routes same-origin.
+  return process.env.RENDER_BACKEND_URL || process.env.BACKEND_URL || null;
+}
+
 function backendUrl(path: string): URL | null {
-  const base = process.env.BACKEND_URL;
+  const base = backendBase();
   if (!base) return null;
   return new URL(path, base.endsWith("/") ? base : `${base}/`);
 }
@@ -10,8 +18,9 @@ function missingBackend() {
   return NextResponse.json(
     {
       detail:
-        "Backend is not configured (BACKEND_URL is missing). If you are running " +
-        "locally with plain `npm run dev`, set NEXT_PUBLIC_API_URL instead — see README.",
+        "Backend is not configured (neither RENDER_BACKEND_URL nor the " +
+        "BACKEND_URL binding is set). If you are running locally with plain " +
+        "`npm run dev`, set NEXT_PUBLIC_API_URL instead — see README.",
     },
     { status: 502 },
   );
