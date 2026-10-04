@@ -74,7 +74,8 @@ Three terminals (or one, in order). From the project root:
 ```bash
 # 1. Frontend
 npm install
-npm run dev            # → http://localhost:3000
+cp .env.example .env.local   # points the app at localhost:8000
+npm run dev                  # → http://localhost:3000
 ```
 
 ```bash
@@ -96,14 +97,39 @@ fictional statement in `data/sample_transactions.csv`.
 
 ## Environment Variables
 
-| Variable           | Default                   | Used by  | Meaning                              |
-| ------------------ | ------------------------- | -------- | ------------------------------------ |
-| `NEXT_PUBLIC_API_URL` | `http://localhost:8000` | frontend | FastAPI backend address              |
+| Variable           | Default                   | Used by  | Meaning                                            |
+| ------------------ | ------------------------- | -------- | -------------------------------------------------- |
+| `NEXT_PUBLIC_API_URL` | _(same-origin)_          | frontend | Backend address. Leave unset on Vercel; set to `http://localhost:8000` in `.env.local` for plain local dev |
 | `OLLAMA_HOST`      | `http://localhost:11434`  | backend  | Ollama server address                |
 | `OLLAMA_MODEL`     | `qwen2.5:3b`              | backend  | Model used for investigations        |
 | `OLLAMA_TIMEOUT`   | `300`                     | backend  | Seconds to wait for a model reply    |
 
 Example: `OLLAMA_MODEL=qwen3:8b .venv/bin/python -m uvicorn main:app --port 8000`
+
+## Deploying on Vercel
+
+`vercel.json` deploys this repo as one project with two services: `app`
+(Next.js) and `backend` (FastAPI, internal-only — it receives no public
+traffic). All traffic goes to `app`, which serves the site plus same-origin
+proxy routes (`/api/analyze`, `/api/investigate`, `/api/ai-status`,
+`/api/health`, alongside its own `/api/demo-csv`). Each proxy forwards to
+the backend through the `BACKEND_URL` **binding** declared on the `app`
+service — Vercel injects the backend's internal URL at runtime, so the
+browser needs no backend URL configured. Do **not** set
+`NEXT_PUBLIC_API_URL` in the Vercel project settings.
+
+Two deployment realities to know:
+
+- **Ollama doesn't run on Vercel.** The deployed backend can't reach a local
+  model, so `/api/ai-status` reports unavailable and the dashboard shows the
+  setup panel instead of AI findings. Upload, analytics, charts, patterns,
+  and Q&A all work. Point `OLLAMA_HOST` at a reachable Ollama server if you
+  have one.
+- **Long AI calls vs. function limits.** `/api/investigate` can take minutes;
+  the route sets `maxDuration = 300`, but the effective cap is your Vercel
+  plan's (60s on Hobby). On time-constrained plans the investigation may
+  time out while analytics stay instant — the UI surfaces this as a retryable
+  error.
 
 ## Project Structure
 

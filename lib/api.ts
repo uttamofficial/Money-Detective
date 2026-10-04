@@ -5,8 +5,11 @@
 
 import type { DashboardData } from "@/lib/mock-data";
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
+// Empty means same-origin: in production Vercel rewrites /api/* to the
+// backend service on the same domain. For plain local `npm run dev`
+// (backend on :8000, frontend on :3000), set NEXT_PUBLIC_API_URL in
+// .env.local instead — see .env.example.
 
 export const ANALYSIS_STORAGE_KEY = "money-detective:analysis";
 
@@ -90,7 +93,7 @@ export async function analyzeCsv(file: File): Promise<AnalysisResponse> {
     });
   } catch {
     throw new Error(
-      "Could not reach the analysis server. Make sure the backend is running on port 8000.",
+      "Could not reach the analysis server. If you are running locally, make sure the backend is up (see README).",
     );
   }
 
@@ -151,7 +154,7 @@ export async function getAiStatus(): Promise<AiStatus> {
     res = await fetch(`${API_BASE}/api/ai-status`);
   } catch {
     throw new Error(
-      "Could not reach the analysis server. Make sure the backend is running on port 8000.",
+      "Could not reach the analysis server. If you are running locally, make sure the backend is up (see README).",
     );
   }
   if (!res.ok) throw await readError(res, "Could not check AI status");
@@ -170,7 +173,7 @@ export async function runInvestigation(
     });
   } catch {
     throw new Error(
-      "Could not reach the analysis server. Make sure the backend is running on port 8000.",
+      "Could not reach the analysis server. If you are running locally, make sure the backend is up (see README).",
     );
   }
   if (!res.ok) throw await readError(res, "The AI investigation failed");
